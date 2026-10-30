@@ -1,0 +1,33 @@
+name: Rebuild index
+
+on:
+  push:
+    paths:
+      - "deals/**.md"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Rebuild index.md
+        run: python scripts/build_index.py
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain index.md)" ]; then
+            git add index.md
+            git commit -m "chore: rebuild index [skip ci]"
+            git push
+          else
+            echo "index.md unchanged"
+          fi
