@@ -1,0 +1,43 @@
+name: 每日優惠更新
+
+on:
+  schedule:
+    # 每晚 21:00 HKT（= 13:00 UTC）
+    - cron: "0 13 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-deals
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 抓取今日優惠（只收官網可核實價格）
+        run: python scripts/fetch_deals.py
+
+      - name: 重建首頁索引
+        run: python scripts/build_index.py
+
+      - name: Commit & push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "今日無新增內容（可能已存在或無可核實優惠）"
+            exit 0
+          fi
+          git add -A deals index.md
+          git commit -m "chore: 自動更新 $(TZ=Asia/Hong_Kong date +%F) 優惠日誌"
+          git push

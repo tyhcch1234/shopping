@@ -36,9 +36,23 @@ bash scripts/publish.sh /path/to/2026-11-02-shopping-deals.md
 腳本會複製檔案入 `deals/`、重建 `index.md`、commit 並 push。
 Push 到 `deals/` 時，GitHub Actions（`.github/workflows/build-index.yml`）亦會自動重建首頁。
 
-## 更新節奏（重要）
+## 更新節奏（自動）
 
-本網站**不會自動更新**。每晚 9 點在對話打「優惠」，我才會搜集當日 10 項、新增一份並 push。
+每晚 **21:00 HKT** 由 GitHub Actions（`.github/workflows/daily-deals.yml`）自動跑 `scripts/fetch_deals.py`：
+
+1. 抓崇光網店 5 個品類分類頁（家品／手袋／美妝／廚具／食品）同惠康網店食品分類頁，每頁抽「實價 < 原價」嘅商品。
+2. 逐條驗證商品連結回 200，死連結即剔除；同一件貨 14 日內不重複上榜。
+3. 按折扣排序、每組取配額（3／2／2／1／2），寫入 `deals/YYYY-MM-DD-shopping-deals.md`，重建 `index.md` 並 push。
+4. 抓唔到嘅商戶寫入「未收錄」，唔會用估算或舊價填數；如果全日零項可核實，job 會失敗而**不發佈**假內容。
+
+手動補跑：Actions → 「每日優惠更新」→ Run workflow。也可以本機：
+
+```bash
+python3 scripts/fetch_deals.py --dry-run   # 先預覽
+python3 scripts/fetch_deals.py --date 2026-11-05 --force
+```
+
+要加新商戶，改 `scripts/fetch_deals.py` 頂部 `GROUPS`（加 URL + 一個 parser）即可。目前只覆蓋伺服器端輸出價格嘅網站；百佳、屈臣氏、豐澤、一田、HKTVmall 會回 403 或依賴 JS，暫未收錄。
 
 ## 數字紀律
 
