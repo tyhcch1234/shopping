@@ -5,6 +5,11 @@ on:
     # 每晚 21:00 HKT（= 13:00 UTC）
     - cron: "0 13 * * *"
   workflow_dispatch:
+    inputs:
+      force:
+        description: "強制重寫今日檔案（測試用）"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -25,7 +30,7 @@ jobs:
           python-version: "3.11"
 
       - name: 抓取今日優惠（只收官網可核實價格）
-        run: python scripts/fetch_deals.py
+        run: python scripts/fetch_deals.py ${{ inputs.force && '--force' || '' }}
 
       - name: 重建首頁索引
         run: python scripts/build_index.py
